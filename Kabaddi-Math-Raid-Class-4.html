@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kabaddi Math Raid - Grade 4</title>
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+        font-family: 'Arial', sans-serif;
+        background: linear-gradient(to bottom, #fff3e0 0%, #ffe0b2 100%);
+        min-height:100vh;
+        overflow-x:hidden;
+    }
+    .top-bar {
+        background: linear-gradient(90deg, #d84315, #4527a0);
+        padding:14px 24px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        box-shadow:0 3px 10px rgba(0,0,0,0.25);
+    }
+    .top-bar h1 {
+        color:white;
+        font-size:1.6em;
+        text-shadow:2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .game-subtitle { color:#ffe0b2; font-size:1em; font-weight:bold; }
+
+    /* START SCREEN */
+    #startScreen {
+        max-width:900px;
+        margin:40px auto;
+        background:white;
+        border-radius:20px;
+        padding:40px;
+        box-shadow:0 10px 30px rgba(0,0,0,0.2);
+        text-align:center;
+    }
+    #startScreen h2 { color:#d84315; font-size:2em; margin-bottom:20px; }
+    .rules-box {
+        background:#fff3e0;
+        border:3px dashed #ff9800;
+        border-radius:14px;
+        padding:20px;
+        text-align:left;
+        margin:20px 0;
+        font-size:1.05em;
+        line-height:1.7;
+        color:#4e342e;
+    }
+    .rules-box b { color:#d84315; }
+    #startScreen button, #playAgainBtn {
+        background:linear-gradient(90deg,#d84315,#ff6f00);
+        color:white;
+        border:none;
+        padding:16px 46px;
+        font-size:1.3em;
+        font-weight:bold;
+        border-radius:50px;
+        cursor:pointer;
+        margin-top:10px;
+        box-shadow:0 6px 16px rgba(216,67,21,0.4);
+        transition:transform 0.15s;
+    }
+    #startScreen button:hover, #playAgainBtn:hover { transform:scale(1.05); }
+
+    /* GAME SCREEN */
+    #gameScreen { display:none; max-width:1100px; margin:20px auto; padding:0 16px 40px; }
+
+    .scoreboard {
+        display:flex;
+        justify-content:space-between;
+        gap:16px;
+        margin-bottom:18px;
+    }
+    .team-card {
+        flex:1;
+        border-radius:16px;
+        padding:14px 18px;
+        color:white;
+        box-shadow:0 4px 12px rgba(0,0,0,0.2);
+        transition:box-shadow 0.3s, transform 0.3s;
+    }
+    .team-card.team1 { background:linear-gradient(135deg,#e64a19,#ff8a50); }
+    .team-card.team2 { background:linear-gradient(135deg,#1565c0,#42a5f5); }
+    .team-card.active-turn { transform:scale(1.04); box-shadow:0 0 0 4px gold, 0 6px 18px rgba(0,0,0,0.35); }
+    .team-card .tname { font-size:1.15em; font-weight:bold; }
+    .team-card .tscore { font-size:2em; font-weight:bold; margin:4px 0; }
+    .team-card .tmeta { font-size:0.9em; opacity:0.95; }
+
+    /* MAT */
+    .mat-wrap {
+        background:#6d4c41;
+        border-radius:18px;
+        padding:14px;
+        box-shadow:0 8px 20px rgba(0,0,0,0.3);
+        margin-bottom:18px;
+    }
+    .mat {
+        position:relative;
+        display:flex;
+        height:150px;
+        border-radius:12px;
+        overflow:hidden;
+        border:4px solid #fff8e1;
+    }
+    .mat-half {
+        flex:1;
+        position:relative;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:8px;
+        flex-wrap:wrap;
+        padding:10px 24px;
+    }
+    .mat-half.h1 { background:repeating-linear-gradient(135deg,#ffab91,#ffab91 20px,#ff8a65 20px,#ff8a65 40px); }
+    .mat-half.h2 { background:repeating-linear-gradient(135deg,#90caf9,#90caf9 20px,#64b5f6 20px,#64b5f6 40px); }
+    .mid-line {
+        position:absolute;
+        left:50%; top:0; bottom:0;
+        width:4px;
+        background:repeating-linear-gradient(white,white 10px,transparent 10px,transparent 20px);
+        transform:translateX(-50%);
+        z-index:3;
+    }
+    .player-token {
+        width:34px; height:34px;
+        border-radius:50%;
+        background:#fff8e1;
+        border:3px solid rgba(0,0,0,0.25);
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.1em;
+        transition:transform 0.4s ease, opacity 0.4s ease;
+    }
+    .player-token.out {
+        transform:scale(0);
+        opacity:0;
+    }
+    .raider {
+        position:absolute;
+        top:50%;
+        width:44px; height:44px;
+        border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.4em;
+        transform:translate(-50%,-50%);
+        transition:left 0.8s cubic-bezier(.4,0,.2,1);
+        z-index:5;
+        box-shadow:0 0 0 4px gold, 0 4px 10px rgba(0,0,0,0.4);
+        background:white;
+    }
+    .raider.hidden { display:none; }
+    .raider.caught { box-shadow:0 0 0 4px #d32f2f, 0 4px 10px rgba(0,0,0,0.4); }
+
+    .raid-banner {
+        text-align:center;
+        font-size:1.3em;
+        font-weight:bold;
+        color:#4e342e;
+        margin-bottom:10px;
+        min-height:1.6em;
+    }
+
+    /* QUESTION PANEL */
+    .question-panel {
+        background:white;
+        border-radius:18px;
+        padding:24px;
+        box-shadow:0 6px 18px rgba(0,0,0,0.15);
+    }
+    .timer-bar-outer {
+        width:100%;
+        height:14px;
+        background:#eee;
+        border-radius:10px;
+        overflow:hidden;
+        margin-bottom:16px;
+    }
+    .timer-bar-inner {
+        height:100%;
+        background:linear-gradient(90deg,#43a047,#c0ca33);
+        width:100%;
+        transition:width 1s linear, background 0.3s;
+    }
+    .question-text {
+        font-size:1.6em;
+        font-weight:bold;
+        text-align:center;
+        color:#333;
+        margin-bottom:22px;
+        min-height:1.4em;
+    }
+    .options-grid {
+        display:grid;
+        grid-template-columns:repeat(3,1fr);
+        gap:16px;
+    }
+    .option-btn {
+        background:#f5f5f5;
+        border:3px solid #ddd;
+        border-radius:14px;
+        padding:20px 10px;
+        font-size:1.3em;
+        font-weight:bold;
+        color:#333;
+        cursor:pointer;
+        transition:all 0.2s;
+    }
+    .option-btn:hover:not(:disabled) { border-color:#ff9800; background:#fff3e0; transform:translateY(-2px); }
+    .option-btn:disabled { cursor:default; }
+    .option-btn.correct { background:#c8e6c9; border-color:#43a047; color:#1b5e20; }
+    .option-btn.wrong { background:#ffcdd2; border-color:#e53935; color:#b71c1c; }
+
+    .feedback-msg {
+        text-align:center;
+        font-size:1.4em;
+        font-weight:bold;
+        margin-top:16px;
+        min-height:1.4em;
+    }
+    .feedback-msg.success { color:#2e7d32; }
+    .feedback-msg.fail { color:#c62828; }
+
+    /* END SCREEN */
+    #endScreen {
+        display:none;
+        max-width:800px;
+        margin:60px auto;
+        background:white;
+        border-radius:20px;
+        padding:44px;
+        text-align:center;
+        box-shadow:0 10px 30px rgba(0,0,0,0.25);
+    }
+    #endScreen h2 { font-size:2.4em; margin-bottom:14px; }
+    #endScreen .final-score { font-size:1.5em; margin:18px 0; color:#4e342e; font-weight:bold; }
+    #endScreen .reason { font-size:1.1em; color:#666; margin-bottom:20px; }
+
+    @media (max-width:700px) {
+        .options-grid { grid-template-columns:1fr; }
+        .mat-half { padding:6px 10px; gap:5px; }
+        .player-token { width:26px; height:26px; font-size:0.9em; }
+        .top-bar h1 { font-size:1.2em; }
+    }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+    <h1>🤼 KABADDI MATH RAID 🤼</h1>
+    <div class="game-subtitle">Mathematics Challenge - Grade 4</div>
+</div>
+
+<div id="startScreen">
+    <h2>🤼 Kabaddi Math Raid - Class 4 🤼</h2>
+    <div class="rules-box">
+        <b>How to Play:</b><br><br>
+        🚩 Two teams take turns "raiding" with a maths question (15 seconds per raid).<br><br>
+        ✅ <b>Correct answer</b> = Successful raid! Your team scores <b>+2 points</b> and tags <b>1 opponent player</b> out.<br><br>
+        ❌ <b>Wrong answer / time out</b> = Raider caught! Opponent scores <b>+1 point</b> and <b>your team loses 1 player</b>.<br><br>
+        🏆 Each team starts with <b>7 players</b>. A team is <b>ALL OUT</b> when it has 0 players left — game over instantly!<br><br>
+        ⏱️ If nobody goes All Out, the game ends after <b>10 raids each</b> — highest score wins.
+    </div>
+    <button onclick="startGame()">🚩 Start the Match</button>
+</div>
+
+<div id="gameScreen">
+    <div class="scoreboard">
+        <div class="team-card team1" id="team1Card">
+            <div class="tname">🟧 Team 1</div>
+            <div class="tscore" id="team1ScoreDisplay">0</div>
+            <div class="tmeta">Players left: <span id="team1PlayersDisplay">7</span>/7</div>
+            <div class="tmeta">Raids: <span id="team1RaidsDisplay">0</span>/10</div>
+        </div>
+        <div class="team-card team2" id="team2Card">
+            <div class="tname">🟦 Team 2</div>
+            <div class="tscore" id="team2ScoreDisplay">0</div>
+            <div class="tmeta">Players left: <span id="team2PlayersDisplay">7</span>/7</div>
+            <div class="tmeta">Raids: <span id="team2RaidsDisplay">0</span>/10</div>
+        </div>
+    </div>
+
+    <div class="mat-wrap">
+        <div class="mat">
+            <div class="mid-line"></div>
+            <div class="mat-half h1" id="team1Mat"></div>
+            <div class="mat-half h2" id="team2Mat"></div>
+            <div class="raider hidden" id="raider">🏃</div>
+        </div>
+    </div>
+
+    <div class="raid-banner" id="raidBanner">Get Ready...</div>
+
+    <div class="question-panel">
+        <div class="timer-bar-outer"><div class="timer-bar-inner" id="timerBar"></div></div>
+        <div class="question-text" id="questionText">Loading question...</div>
+        <div class="options-grid" id="optionsGrid"></div>
+        <div class="feedback-msg" id="feedbackMsg"></div>
+    </div>
+</div>
+
+<div id="endScreen">
+    <h2 id="endTitle">🏆 Match Over!</h2>
+    <div class="reason" id="endReason"></div>
+    <div class="final-score" id="endScore"></div>
+    <button id="playAgainBtn" onclick="location.reload()">🔄 Play Again (New Set)</button>
+</div>
+
+<script>
+        const team1QuestionSets = [
+            // Set 1 - Big Numbers - Addition & Subtraction
+            [
+                { question: "481 + 304 = ?", answer: "785", wrongOptions: ["802", "810"] },
+                { question: "496 - 287 = ?", answer: "209", wrongOptions: ["196", "205"] },
+                { question: "23 × 8 = ?", answer: "184", wrongOptions: ["200", "189"] },
+                { question: "166 ÷ 2 = ?", answer: "83", wrongOptions: ["81", "86"] },
+                { question: "213 + 740 = ?", answer: "953", wrongOptions: ["976", "936"] },
+                { question: "970 - 236 = ?", answer: "734", wrongOptions: ["742", "724"] },
+                { question: "51 × 4 = ?", answer: "204", wrongOptions: ["210", "213"] },
+                { question: "249 ÷ 3 = ?", answer: "83", wrongOptions: ["85", "89"] },
+                { question: "587 + 471 = ?", answer: "1058", wrongOptions: ["1039", "1035"] },
+                { question: "654 - 506 = ?", answer: "148", wrongOptions: ["142", "133"] }
+            ],
+            // Set 2 - Multiplication & Division
+            [
+                { question: "457 + 687 = ?", answer: "1144", wrongOptions: ["1124", "1129"] },
+                { question: "474 - 160 = ?", answer: "314", wrongOptions: ["326", "304"] },
+                { question: "74 × 8 = ?", answer: "592", wrongOptions: ["588", "597"] },
+                { question: "378 ÷ 7 = ?", answer: "54", wrongOptions: ["47", "58"] },
+                { question: "617 + 220 = ?", answer: "837", wrongOptions: ["844", "850"] },
+                { question: "462 - 258 = ?", answer: "204", wrongOptions: ["190", "217"] },
+                { question: "48 × 8 = ?", answer: "384", wrongOptions: ["370", "381"] },
+                { question: "222 ÷ 3 = ?", answer: "74", wrongOptions: ["72", "71"] },
+                { question: "403 + 557 = ?", answer: "960", wrongOptions: ["977", "940"] },
+                { question: "962 - 384 = ?", answer: "578", wrongOptions: ["560", "584"] }
+            ],
+            // Set 3 - Factors, Multiples & Patterns
+            [
+                { question: "Which is a factor of 12?", answer: "4", wrongOptions: ["5", "7"] },
+                { question: "Which is a multiple of 6?", answer: "18", wrongOptions: ["15", "20"] },
+                { question: "What is the smallest factor of any number?", answer: "1", wrongOptions: ["0", "2"] },
+                { question: "Which number is a multiple of both 2 and 3?", answer: "12", wrongOptions: ["10", "15"] },
+                { question: "How many factors does 10 have (1, 2, 5, 10)?", answer: "4", wrongOptions: ["3", "5"] },
+                { question: "What comes next in the pattern: 5, 10, 15, 20, ___?", answer: "25", wrongOptions: ["22", "30"] },
+                { question: "Which is a prime number?", answer: "7", wrongOptions: ["8", "9"] },
+                { question: "Which is a composite number?", answer: "9", wrongOptions: ["7", "11"] },
+                { question: "What comes next in the pattern: 2, 4, 8, 16, ___?", answer: "32", wrongOptions: ["24", "30"] },
+                { question: "What is the largest factor of 20?", answer: "20", wrongOptions: ["10", "4"] }
+            ],
+            // Set 4 - Fractions & Money
+            [
+                { question: "In the fraction 3/5, which number is the numerator?", answer: "3", wrongOptions: ["5", "8"] },
+                { question: "In the fraction 3/5, which number is the denominator?", answer: "5", wrongOptions: ["3", "2"] },
+                { question: "Which fraction represents 'half'?", answer: "1/2", wrongOptions: ["1/3", "2/1"] },
+                { question: "Which is bigger: 1/2 or 1/4?", answer: "1/2", wrongOptions: ["1/4", "They are equal"] },
+                { question: "₹50 note + ₹20 note = ₹?", answer: "70", wrongOptions: ["60", "80"] },
+                { question: "If a pencil costs ₹8, how much do 5 pencils cost?", answer: "40", wrongOptions: ["35", "45"] },
+                { question: "₹100 - ₹35 = ₹?", answer: "65", wrongOptions: ["75", "55"] },
+                { question: "Which fraction shows 3 parts out of 4 equal parts?", answer: "3/4", wrongOptions: ["4/3", "1/4"] },
+                { question: "How many 50 paise coins make ₹5?", answer: "10", wrongOptions: ["5", "20"] },
+                { question: "If you have ₹200 and spend ₹85, how much is left?", answer: "115", wrongOptions: ["105", "125"] }
+            ],
+            // Set 5 - Time & Measurement
+            [
+                { question: "How many minutes are there in 1 hour?", answer: "60", wrongOptions: ["100", "30"] },
+                { question: "How many hours are there in a day?", answer: "24", wrongOptions: ["12", "20"] },
+                { question: "1 metre is equal to how many centimetres?", answer: "100", wrongOptions: ["10", "1000"] },
+                { question: "1 kilogram is equal to how many grams?", answer: "1000", wrongOptions: ["100", "500"] },
+                { question: "1 litre is equal to how many millilitres?", answer: "1000", wrongOptions: ["100", "500"] },
+                { question: "A school starts at 8:00 and the first period is 45 minutes long. At what time does it end?", answer: "8:45", wrongOptions: ["9:00", "8:30"] },
+                { question: "If a movie starts at 4:30 pm and lasts 2 hours, when does it end?", answer: "6:30 pm", wrongOptions: ["6:00 pm", "7:00 pm"] },
+                { question: "A shopkeeper had 84 mangoes. He sold 37. How many are left?", answer: "47", wrongOptions: ["57", "37"] },
+                { question: "A class has 4 rows with 8 students in each row. How many students in total?", answer: "32", wrongOptions: ["28", "36"] },
+                { question: "How many days are there in February in a leap year?", answer: "29", wrongOptions: ["28", "30"] }
+            ]
+        ];
+
+        const team2QuestionSets = [
+            // Set 1 - Big Numbers - Addition & Subtraction
+            [
+                { question: "435 + 873 = ?", answer: "1308", wrongOptions: ["1290", "1292"] },
+                { question: "636 - 177 = ?", answer: "459", wrongOptions: ["464", "465"] },
+                { question: "13 × 9 = ?", answer: "117", wrongOptions: ["125", "106"] },
+                { question: "623 ÷ 7 = ?", answer: "89", wrongOptions: ["83", "93"] },
+                { question: "677 + 782 = ?", answer: "1459", wrongOptions: ["1484", "1465"] },
+                { question: "972 - 501 = ?", answer: "471", wrongOptions: ["481", "461"] },
+                { question: "63 × 2 = ?", answer: "126", wrongOptions: ["117", "121"] },
+                { question: "162 ÷ 3 = ?", answer: "54", wrongOptions: ["60", "56"] },
+                { question: "699 + 253 = ?", answer: "952", wrongOptions: ["968", "976"] },
+                { question: "785 - 252 = ?", answer: "533", wrongOptions: ["519", "541"] }
+            ],
+            // Set 2 - Multiplication & Division
+            [
+                { question: "635 + 275 = ?", answer: "910", wrongOptions: ["902", "890"] },
+                { question: "895 - 419 = ?", answer: "476", wrongOptions: ["481", "470"] },
+                { question: "45 × 9 = ?", answer: "405", wrongOptions: ["413", "424"] },
+                { question: "203 ÷ 7 = ?", answer: "29", wrongOptions: ["22", "35"] },
+                { question: "455 + 808 = ?", answer: "1263", wrongOptions: ["1256", "1276"] },
+                { question: "764 - 328 = ?", answer: "436", wrongOptions: ["424", "417"] },
+                { question: "40 × 5 = ?", answer: "200", wrongOptions: ["190", "185"] },
+                { question: "504 ÷ 9 = ?", answer: "56", wrongOptions: ["49", "58"] },
+                { question: "633 + 415 = ?", answer: "1048", wrongOptions: ["1037", "1024"] },
+                { question: "757 - 473 = ?", answer: "284", wrongOptions: ["289", "277"] }
+            ],
+            // Set 3 - Factors, Multiples & Patterns
+            [
+                { question: "Which is a factor of 15?", answer: "5", wrongOptions: ["4", "6"] },
+                { question: "Which is a multiple of 7?", answer: "21", wrongOptions: ["18", "24"] },
+                { question: "Every number is a factor of itself and:", answer: "1", wrongOptions: ["0", "2"] },
+                { question: "Which number is a multiple of both 3 and 4?", answer: "12", wrongOptions: ["9", "16"] },
+                { question: "How many factors does 8 have (1, 2, 4, 8)?", answer: "4", wrongOptions: ["3", "5"] },
+                { question: "What comes next in the pattern: 3, 6, 9, 12, ___?", answer: "15", wrongOptions: ["14", "18"] },
+                { question: "Which is a prime number?", answer: "11", wrongOptions: ["9", "12"] },
+                { question: "Which is a composite number?", answer: "15", wrongOptions: ["13", "17"] },
+                { question: "What comes next in the pattern: 1, 3, 9, 27, ___?", answer: "81", wrongOptions: ["54", "90"] },
+                { question: "What is the largest factor of 18?", answer: "18", wrongOptions: ["9", "6"] }
+            ],
+            // Set 4 - Fractions & Money
+            [
+                { question: "In the fraction 2/7, which number is the numerator?", answer: "2", wrongOptions: ["7", "9"] },
+                { question: "In the fraction 2/7, which number is the denominator?", answer: "7", wrongOptions: ["2", "5"] },
+                { question: "Which fraction represents 'one-fourth'?", answer: "1/4", wrongOptions: ["4/1", "1/3"] },
+                { question: "Which is smaller: 1/3 or 1/5?", answer: "1/5", wrongOptions: ["1/3", "They are equal"] },
+                { question: "₹100 note + ₹50 note = ₹?", answer: "150", wrongOptions: ["140", "160"] },
+                { question: "If a notebook costs ₹15, how much do 4 notebooks cost?", answer: "60", wrongOptions: ["45", "75"] },
+                { question: "₹150 - ₹65 = ₹?", answer: "85", wrongOptions: ["95", "75"] },
+                { question: "Which fraction shows 2 parts out of 3 equal parts?", answer: "2/3", wrongOptions: ["3/2", "1/3"] },
+                { question: "How many 25 paise coins make ₹5?", answer: "20", wrongOptions: ["10", "15"] },
+                { question: "If you have ₹300 and spend ₹120, how much is left?", answer: "180", wrongOptions: ["170", "190"] }
+            ],
+            // Set 5 - Time & Measurement
+            [
+                { question: "How many seconds are there in 1 minute?", answer: "60", wrongOptions: ["100", "50"] },
+                { question: "How many months are there in a year?", answer: "12", wrongOptions: ["10", "24"] },
+                { question: "1 kilometre is equal to how many metres?", answer: "1000", wrongOptions: ["100", "500"] },
+                { question: "1 hour is equal to how many minutes?", answer: "60", wrongOptions: ["100", "30"] },
+                { question: "500 grams + 500 grams = how many kilograms?", answer: "1", wrongOptions: ["2", "5"] },
+                { question: "A train leaves at 7:15 and reaches in 50 minutes. At what time does it arrive?", answer: "8:05", wrongOptions: ["7:50", "8:15"] },
+                { question: "If a class starts at 10:00 am and lasts 1 hour 30 minutes, when does it end?", answer: "11:30 am", wrongOptions: ["11:00 am", "12:00 pm"] },
+                { question: "A farmer had 96 apples. He packed them equally into 8 baskets. How many in each basket?", answer: "12", wrongOptions: ["10", "14"] },
+                { question: "A garden has 6 rows with 9 plants in each row. How many plants in total?", answer: "54", wrongOptions: ["48", "60"] },
+                { question: "How many weeks are there in 28 days?", answer: "4", wrongOptions: ["3", "5"] }
+            ]
+        ];
+
+
+    // ---------- Game State ----------
+    const MAX_RAIDS_PER_TEAM = 10;
+    const RAID_TIME = 15;
+    const START_PLAYERS = 7;
+
+    let team1Score = 0, team2Score = 0;
+    let team1Players = START_PLAYERS, team2Players = START_PLAYERS;
+    let team1RaidsTaken = 0, team2RaidsTaken = 0;
+    let currentRaidTeam = 'team1';
+    let gameEnded = false;
+    let timerInterval = null;
+    let timeLeft = RAID_TIME;
+    let answered = false;
+
+    let usedSets = [];
+    let selectedSetIndex;
+    let team1Questions = [];
+    let team2Questions = [];
+
+    function shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    function createRandomOptions(correctAnswer, wrongOptions) {
+        return shuffleArray([correctAnswer, ...wrongOptions]);
+    }
+
+    function getNewSetIndex() {
+        if (usedSets.length >= 5) { usedSets = []; }
+        let available = [0,1,2,3,4].filter(i => !usedSets.includes(i));
+        let idx = available[Math.floor(Math.random() * available.length)];
+        usedSets.push(idx);
+        return idx;
+    }
+
+    function prepareQuestions() {
+        selectedSetIndex = getNewSetIndex();
+        team1Questions = team1QuestionSets[selectedSetIndex].map(q => ({
+            question: q.question,
+            answer: q.answer,
+            options: createRandomOptions(q.answer, q.wrongOptions)
+        }));
+        team2Questions = team2QuestionSets[selectedSetIndex].map(q => ({
+            question: q.question,
+            answer: q.answer,
+            options: createRandomOptions(q.answer, q.wrongOptions)
+        }));
+    }
+
+    function renderPlayers() {
+        const t1Mat = document.getElementById('team1Mat');
+        const t2Mat = document.getElementById('team2Mat');
+        t1Mat.innerHTML = '';
+        t2Mat.innerHTML = '';
+        for (let i = 0; i < START_PLAYERS; i++) {
+            const el1 = document.createElement('div');
+            el1.className = 'player-token';
+            el1.id = 'team1-player-' + i;
+            el1.textContent = '🧍';
+            if (i >= team1Players) el1.classList.add('out');
+            t1Mat.appendChild(el1);
+
+            const el2 = document.createElement('div');
+            el2.className = 'player-token';
+            el2.id = 'team2-player-' + i;
+            el2.textContent = '🧍';
+            if (i >= team2Players) el2.classList.add('out');
+            t2Mat.appendChild(el2);
+        }
+    }
+
+    function updateScoreboard() {
+        document.getElementById('team1ScoreDisplay').textContent = team1Score;
+        document.getElementById('team2ScoreDisplay').textContent = team2Score;
+        document.getElementById('team1PlayersDisplay').textContent = team1Players;
+        document.getElementById('team2PlayersDisplay').textContent = team2Players;
+        document.getElementById('team1RaidsDisplay').textContent = team1RaidsTaken;
+        document.getElementById('team2RaidsDisplay').textContent = team2RaidsTaken;
+
+        document.getElementById('team1Card').classList.toggle('active-turn', currentRaidTeam === 'team1' && !gameEnded);
+        document.getElementById('team2Card').classList.toggle('active-turn', currentRaidTeam === 'team2' && !gameEnded);
+    }
+
+    function startGame() {
+        document.getElementById('startScreen').style.display = 'none';
+        document.getElementById('gameScreen').style.display = 'block';
+        prepareQuestions();
+        renderPlayers();
+        updateScoreboard();
+        startRaid('team1');
+    }
+
+    function startRaid(team) {
+        if (gameEnded) return;
+        currentRaidTeam = team;
+        answered = false;
+        updateScoreboard();
+
+        const banner = document.getElementById('raidBanner');
+        banner.textContent = (team === 'team1' ? '🟧 Team 1 is Raiding!' : '🟦 Team 2 is Raiding!');
+        banner.style.color = (team === 'team1' ? '#d84315' : '#1565c0');
+
+        document.getElementById('feedbackMsg').textContent = '';
+        document.getElementById('feedbackMsg').className = 'feedback-msg';
+
+        const qList = team === 'team1' ? team1Questions : team2Questions;
+        const idx = team === 'team1' ? team1RaidsTaken : team2RaidsTaken;
+        const q = qList[idx];
+
+        document.getElementById('questionText').textContent = q.question;
+        const grid = document.getElementById('optionsGrid');
+        grid.innerHTML = '';
+        q.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.textContent = opt;
+            btn.onclick = () => selectAnswer(opt, q.answer, btn);
+            grid.appendChild(btn);
+        });
+
+        positionRaider(team, 'home');
+
+        timeLeft = RAID_TIME;
+        const bar = document.getElementById('timerBar');
+        bar.style.width = '100%';
+        bar.style.background = 'linear-gradient(90deg,#43a047,#c0ca33)';
+
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            const pct = Math.max(0, (timeLeft / RAID_TIME) * 100);
+            bar.style.width = pct + '%';
+            if (pct < 35) bar.style.background = 'linear-gradient(90deg,#e53935,#ff9800)';
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                if (!answered) {
+                    answered = true;
+                    disableOptions();
+                    document.getElementById('feedbackMsg').textContent = "⏰ Time's up! Raider caught!";
+                    document.getElementById('feedbackMsg').className = 'feedback-msg fail';
+                    setTimeout(() => resolveRaid(false), 600);
+                }
+            }
+        }, 1000);
+    }
+
+    function disableOptions() {
+        document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+    }
+
+    function selectAnswer(selected, correct, btnEl) {
+        if (answered) return;
+        answered = true;
+        clearInterval(timerInterval);
+        disableOptions();
+
+        const isCorrect = selected === correct;
+        document.querySelectorAll('.option-btn').forEach(b => {
+            if (b.textContent === correct) b.classList.add('correct');
+            else if (b === btnEl) b.classList.add('wrong');
+        });
+
+        const fb = document.getElementById('feedbackMsg');
+        if (isCorrect) {
+            fb.textContent = '✅ Successful Raid!';
+            fb.className = 'feedback-msg success';
+        } else {
+            fb.textContent = '❌ Raider Caught!';
+            fb.className = 'feedback-msg fail';
+        }
+        setTimeout(() => resolveRaid(isCorrect), 700);
+    }
+
+    function positionRaider(team, state) {
+        const raider = document.getElementById('raider');
+        raider.classList.remove('hidden', 'caught');
+        raider.style.background = (team === 'team1' ? '#ffab91' : '#90caf9');
+        if (state === 'home') {
+            raider.style.left = (team === 'team1' ? '10%' : '90%');
+        } else if (state === 'opponent') {
+            raider.style.left = (team === 'team1' ? '90%' : '10%');
+        } else if (state === 'mid') {
+            raider.style.left = '50%';
+        }
+    }
+
+    function resolveRaid(success) {
+        const team = currentRaidTeam;
+        const opponent = team === 'team1' ? 'team2' : 'team1';
+
+        if (success) {
+            positionRaider(team, 'opponent');
+            setTimeout(() => {
+                if (team === 'team1') team1Score += 2; else team2Score += 2;
+                removePlayer(opponent);
+                updateScoreboard();
+                setTimeout(() => {
+                    positionRaider(team, 'home');
+                    setTimeout(() => finishTurn(team), 500);
+                }, 500);
+            }, 850);
+        } else {
+            positionRaider(team, 'mid');
+            setTimeout(() => {
+                document.getElementById('raider').classList.add('caught');
+                if (team === 'team1') team2Score += 1; else team1Score += 1;
+                removePlayer(team);
+                updateScoreboard();
+                setTimeout(() => {
+                    document.getElementById('raider').classList.add('hidden');
+                    setTimeout(() => finishTurn(team), 400);
+                }, 600);
+            }, 500);
+        }
+    }
+
+    function removePlayer(team) {
+        if (team === 'team1' && team1Players > 0) {
+            team1Players--;
+            const el = document.getElementById('team1-player-' + team1Players);
+            if (el) el.classList.add('out');
+        } else if (team === 'team2' && team2Players > 0) {
+            team2Players--;
+            const el = document.getElementById('team2-player-' + team2Players);
+            if (el) el.classList.add('out');
+        }
+    }
+
+    function finishTurn(teamThatRaided) {
+        if (teamThatRaided === 'team1') team1RaidsTaken++; else team2RaidsTaken++;
+        updateScoreboard();
+
+        if (team1Players <= 0) { endGame('team2', 'ALL OUT! Team 1 has no players left on the mat.'); return; }
+        if (team2Players <= 0) { endGame('team1', 'ALL OUT! Team 2 has no players left on the mat.'); return; }
+
+        if (team1RaidsTaken >= MAX_RAIDS_PER_TEAM && team2RaidsTaken >= MAX_RAIDS_PER_TEAM) {
+            if (team1Score > team2Score) endGame('team1', 'All raids complete! Team 1 finished with the higher score.');
+            else if (team2Score > team1Score) endGame('team2', 'All raids complete! Team 2 finished with the higher score.');
+            else {
+                if (team1Players > team2Players) endGame('team1', 'Scores level! Team 1 wins with more players remaining.');
+                else if (team2Players > team1Players) endGame('team2', 'Scores level! Team 2 wins with more players remaining.');
+                else endGame('draw', 'A perfectly matched contest — it\'s a DRAW!');
+            }
+            return;
+        }
+
+        const nextTeam = teamThatRaided === 'team1' ? 'team2' : 'team1';
+        startRaid(nextTeam);
+    }
+
+    function endGame(winner, reason) {
+        gameEnded = true;
+        clearInterval(timerInterval);
+        document.getElementById('gameScreen').style.display = 'none';
+        document.getElementById('endScreen').style.display = 'block';
+
+        const titleEl = document.getElementById('endTitle');
+        if (winner === 'draw') {
+            titleEl.textContent = '🤝 Match Drawn!';
+        } else {
+            titleEl.textContent = (winner === 'team1' ? '🟧 Team 1 Wins! 🏆' : '🟦 Team 2 Wins! 🏆');
+        }
+        document.getElementById('endReason').textContent = reason;
+        document.getElementById('endScore').innerHTML =
+            'Final Score — Team 1: ' + team1Score + ' &nbsp;|&nbsp; Team 2: ' + team2Score +
+            '<br>Players Left — Team 1: ' + team1Players + ' &nbsp;|&nbsp; Team 2: ' + team2Players;
+    }
+</script>
+</body>
+</html>
